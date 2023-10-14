@@ -33,14 +33,14 @@
 
 (defconst bfmt-formatter-output-buffer "*bfmt output*")
 
-(defcustom bmt-formatter-function #'bfmt-run-formatter-command
+(defcustom bfmt-formatter-function #'bfmt-run-formatter-command
   "Function used to format files in a project.
 
 The function takes as an argument a list of file names to be
 formatted and should run a formatter in sync."
   :type 'function)
 
-(defcustom bmt-formatter-command '("nix" "fmt" "--")
+(defcustom bfmt-formatter-command '("nix" "fmt" "--")
   "Formatter command used in `bfmt-run-formatter-command'.
 
 If the value is a function, it takes as argument a list of file
@@ -111,7 +111,7 @@ If the value is nil, `bfmt-enqueue-this-file' and `bfmt-apply' do nothing."
                         (bfmt-exclude-unchanged-files files)
                       files)))
         (when files
-          (funcall bmt-formatter-function files)))
+          (funcall bfmt-formatter-function files)))
       (puthash root nil bfmt-per-root-queues))))
 
 (defun bfmt-exclude-unchanged-files (files)
@@ -140,7 +140,7 @@ If the value is nil, `bfmt-enqueue-this-file' and `bfmt-apply' do nothing."
   (when-let (buffer (get-buffer bfmt-formatter-output-buffer))
     (kill-buffer buffer))
   (with-current-buffer (generate-new-buffer bfmt-formatter-output-buffer)
-    (pcase-exhaustive (bmt-formatter-command files)
+    (pcase-exhaustive (bfmt-formatter-command files)
       (`(,cmd . ,args)
        (unless (zerop (apply #'call-process cmd
                              nil t nil
@@ -150,12 +150,12 @@ If the value is nil, `bfmt-enqueue-this-file' and `bfmt-apply' do nothing."
       (`nil))))
 
 (defun bfmt--formatter-command (files)
-  (cl-typecase bmt-formatter-command
+  (cl-typecase bfmt-formatter-command
     (function
-     (funcall bmt-formatter-command files))
+     (funcall bfmt-formatter-command files))
     (list
-     (assert (seq-every-p #'stringp bmt-formatter-command))
-     (append bmt-formatter-command files))))
+     (assert (seq-every-p #'stringp bfmt-formatter-command))
+     (append bfmt-formatter-command files))))
 
 (provide 'bfmt)
 ;;; bfmt.el ends here
