@@ -140,7 +140,7 @@ If the value is nil, `bfmt-enqueue-this-file' and `bfmt-apply' do nothing."
   (when-let (buffer (get-buffer bfmt-formatter-output-buffer))
     (kill-buffer buffer))
   (with-current-buffer (generate-new-buffer bfmt-formatter-output-buffer)
-    (pcase-exhaustive (bfmt-formatter-command files)
+    (pcase-exhaustive (bfmt--formatter-command files)
       (`(,cmd . ,args)
        (unless (zerop (apply #'call-process cmd
                              nil t nil
