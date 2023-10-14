@@ -102,6 +102,7 @@ If the value is nil, `bfmt-enqueue-this-file' and `bfmt-apply' do nothing."
 ;;;###autoload
 (defun bfmt-apply ()
   "Apply formatter to files under the root directory."
+  (interactive)
   (when-let (root (bfmt--find-root default-directory))
     (when-let (queue (gethash root bfmt-per-root-queues))
       (let* ((default-directory root)
