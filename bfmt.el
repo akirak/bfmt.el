@@ -12,8 +12,11 @@
 The function should take the file name or the directory of the
 buffer as the argument and returns a directory. The returned
 directory can be either abbreviated or unabbreviated but should
-be consistent across all files under the same root."
-  :type 'function)
+be consistent across all files under the same root.
+
+If the value is nil, `bfmt-enqueue-this-file' and `bfmt-apply' do nothing."
+  :type '(choice function
+                 (const nil)))
 
 (defcustom bfmt-check-git-diff t
   "When non-nil, exclude files that have not changed since HEAD."
@@ -29,7 +32,9 @@ be consistent across all files under the same root."
 ;;;###autoload
 (defun bfmt-apply ()
   "Apply formatter to files under the root directory."
-  (when-let (root (funcall bfmt-root-function default-directory))
+  (when-let (root (and bfmt-root-function
+                       (functionp bfmt-root-function)
+                       (funcall bfmt-root-function default-directory)))
     (when-let (queue (gethash root bfmt-per-root-queues))
       (let* ((default-directory root)
              (files (cl-remove-duplicates queue :test #'equal))
@@ -53,13 +58,15 @@ be consistent across all files under the same root."
 ;;;###autoload
 (defun bfmt-enqueue-this-file ()
   "Enqueue the buffer file to the formatting queue."
-  (when-let* ((file (buffer-file-name))
-              (root (funcall bfmt-root-function file)))
-    (let ((queue (gethash root bfmt-per-root-queues)))
-      (unless (and queue (equal (car queue) file))
-        (puthash root
-                 (cons file queue)
-                 bfmt-per-root-queues)))))
+  (when (and bfmt-root-function
+             (functionp bfmt-root-function))
+    (when-let* ((file (buffer-file-name))
+                (root (funcall bfmt-root-function file)))
+      (let ((queue (gethash root bfmt-per-root-queues)))
+        (unless (and queue (equal (car queue) file))
+          (puthash root
+                   (cons file queue)
+                   bfmt-per-root-queues))))))
 
 ;;;; Specific formatters
 
