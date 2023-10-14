@@ -2,9 +2,25 @@
 
 (defconst bfmt-formatter-output-buffer "*bfmt output*")
 
-(defcustom bmt-formatter-function #'bfmt-nix-fmt
-  "Function used to format files in a project."
+(defcustom bmt-formatter-function #'bfmt-run-formatter-command
+  "Function used to format files in a project.
+
+The function takes as an argument a list of file names to be
+formatted and should run a formatter in sync."
   :type 'function)
+
+(defcustom bmt-formatter-command '("nix" "fmt" "--")
+  "Formatter command used in `bfmt-run-formatter-command'.
+
+If the value is a function, it takes as argument a list of file
+names and should return a formatter command as a list of strings.
+
+If it is a list of strings, a list of file names will be appended
+to the list, and the entire list will be used as a formatter
+command."
+  :type '(choice function
+                 (repeat :tag "Command" string)
+                 (const nil)))
 
 (defcustom bfmt-root-location nil
   "Function or file name used to determine the root of the project.
@@ -73,17 +89,26 @@ If the value is nil, `bfmt-enqueue-this-file' and `bfmt-apply' do nothing."
                    (cons file queue)
                    bfmt-per-root-queues))))))
 
-;;;; Specific formatters
-
-(defun bfmt-nix-fmt (files)
-  "Run \"nix fmt\" on FILES."
+(defun bfmt-run-formatter-command (files)
   (when-let (buffer (get-buffer bfmt-formatter-output-buffer))
     (kill-buffer buffer))
   (with-current-buffer (generate-new-buffer bfmt-formatter-output-buffer)
-    (unless (zerop (apply #'call-process "nix" nil t nil
-                          "fmt" files))
-      (pop-to-buffer bfmt-formatter-output-buffer)
-      (user-error "nix fmt finished with non-zero exit code"))))
+    (pcase-exhaustive (bmt-formatter-command files)
+      (`(,cmd . ,args)
+       (unless (zerop (apply #'call-process cmd
+                             nil t nil
+                             args))
+         (pop-to-buffer bfmt-formatter-output-buffer)
+         (user-error "nix fmt finished with non-zero exit code")))
+      (`nil))))
+
+(defun bfmt--formatter-command (files)
+  (cl-typecase bmt-formatter-command
+    (function
+     (funcall bmt-formatter-command files))
+    (list
+     (assert (seq-every-p #'stringp bmt-formatter-command))
+     (append bmt-formatter-command files))))
 
 (provide 'bfmt)
 ;;; bfmt.el ends here
