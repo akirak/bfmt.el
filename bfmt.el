@@ -87,6 +87,13 @@ If the value is nil, `bfmt-enqueue-this-file' and `bfmt-apply' do nothing."
       (add-hook 'after-save-hook #'bfmt-enqueue-this-file nil t)
     (remove-hook 'after-save-hook #'bfmt-enqueue-this-file t)))
 
+;;;###autoload
+(define-globalized-minor-mode bfmt-global-mode bfmt-mode
+  (lambda ()
+    (when (and buffer-file-name
+               (not (buffer-base-buffer)))
+      (bfmt-mode t))))
+
 (defun bfmt--find-root (file)
   (cl-typecase bfmt-root-location
     (function (funcall bfmt-root-location file))
