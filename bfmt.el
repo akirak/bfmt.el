@@ -79,6 +79,14 @@ If the value is nil, `bfmt-enqueue-this-file' and `bfmt-apply' do nothing."
 (defvar bfmt-per-root-queues
   (make-hash-table :test #'equal :size bfmt-initial-project-map-size))
 
+;;;###autoload
+(define-minor-mode bfmt-mode
+  "Minor mode in which files are queued for formatting on save."
+  :lighter " Bfmt"
+  (if bfmt-mode
+      (add-hook 'after-save-hook #'bfmt-enqueue-this-file nil t)
+    (remove-hook 'after-save-hook #'bfmt-enqueue-this-file t)))
+
 (defun bfmt--find-root (file)
   (cl-typecase bfmt-root-location
     (function (funcall bfmt-root-location file))
