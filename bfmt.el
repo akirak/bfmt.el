@@ -43,11 +43,15 @@ formatted and should run a formatter in sync."
 (defcustom bfmt-formatter-command '("nix" "fmt" "--")
   "Formatter command used in `bfmt-run-formatter-command'.
 
-The value should a list of file names will be appended to the
-list, and the entire list will be used as a formatter command."
-  :type '(choice (repeat :tag "Command" string)
-                 (const nil))
-  :safe t)
+If the value is a function, it takes as argument a list of file
+names and should return a formatter command as a list of strings.
+
+If it is a list of strings, a list of file names will be appended
+to the list, and the entire list will be used as a formatter
+command."
+  :type '(choice function
+                 (repeat :tag "Command" string)
+                 (const nil)))
 
 (defcustom bfmt-root-location nil
   "Function or file name used to determine the root of the project.
@@ -146,8 +150,12 @@ If the value is nil, `bfmt-enqueue-this-file' and `bfmt-apply' do nothing."
       (`nil))))
 
 (defun bfmt--formatter-command (files)
-  (when bfmt-formatter-command
-    (append bfmt-formatter-command files)))
+  (cl-typecase bfmt-formatter-command
+    (function
+     (funcall bfmt-formatter-command files))
+    (list
+     (cl-assert (seq-every-p #'stringp bfmt-formatter-command))
+     (append bfmt-formatter-command files))))
 
 (provide 'bfmt)
 ;;; bfmt.el ends here
