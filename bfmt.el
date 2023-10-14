@@ -154,7 +154,7 @@ If the value is nil, `bfmt-enqueue-this-file' and `bfmt-apply' do nothing."
     (function
      (funcall bfmt-formatter-command files))
     (list
-     (assert (seq-every-p #'stringp bfmt-formatter-command))
+     (cl-assert (seq-every-p #'stringp bfmt-formatter-command))
      (append bfmt-formatter-command files))))
 
 (provide 'bfmt)
