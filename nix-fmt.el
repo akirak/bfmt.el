@@ -63,6 +63,12 @@ If the value is nil, `nix-fmt-enqueue-this-file' and `nix-fmt-apply' do nothing.
 (defvar nix-fmt-per-root-queues
   (make-hash-table :test #'equal :size nix-fmt-initial-project-map-size))
 
+(defvar nix-fmt-root-statuses
+  (make-hash-table :test #'equal :size nix-fmt-initial-project-map-size))
+
+(defvar nix-fmt-program-statuses
+  (make-hash-table :test #'equal :size (* 2 nix-fmt-initial-project-map-size)))
+
 (defvar nix-fmt-nix-system nil)
 
 (defun nix-fmt-nix-system ()
