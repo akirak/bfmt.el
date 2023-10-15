@@ -98,7 +98,7 @@ If the value is nil, `nix-fmt-enqueue-this-file' and `nix-fmt-apply' do nothing.
                       files)))
         (when files
           (nix-fmt--run-formatter files)))
-      (puthash root nil nix-fmt-per-root-queues))))
+      (remhash root nix-fmt-per-root-queues))))
 
 (defun nix-fmt--run-formatter (files)
   (when-let (buffer (get-buffer nix-fmt-formatter-output-buffer))
