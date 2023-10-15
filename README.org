@@ -1,0 +1,11 @@
+* nix-fmt.el
+~nix-fmt.el~ is an Emacs frontend to ~nix fmt~ command.
+It is an alternative to [[https://github.com/purcell/emacs-reformatter][reformatter.el]] and [[https://github.com/radian-software/apheleia][apheleia]], but it is specific to ~nix fmt~ which is configured in the ~formatter~ attribute of each flake.
+
+Especially when combined with [[https://github.com/numtide/treefmt-nix][treefmt-nix]], ~nix fmt~ is a convenient tool that can be used to format code of any language in the repository.
+However, it also means that ~nix fmt~ can run any program configured by the author of the flake, which is potentially dangerous.
+Thus you need to explicitly approve the formatter configuration of every project you work on, as you do with [[https://direnv.net/][direnv]].
+The focus of ~nix-fmt.el~ is to integrate the approval workflow into Emacs.
+If you automatically reformat code with ~treefmt-nix~, you have to approve the configuration before you save any code.
+
+This project is currently work in progress, so the approval workflow is not completely implemented yet.
