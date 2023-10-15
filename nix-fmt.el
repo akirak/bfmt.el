@@ -1,4 +1,4 @@
-;;; nix-fmt.el --- A formatter frontend that applies changes in batch -*- lexical-binding: t -*-
+;;; nix-fmt.el --- A frontend to the Nix formatter -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2023 Akira Komamura
 
@@ -63,6 +63,43 @@ If the value is nil, `nix-fmt-enqueue-this-file' and `nix-fmt-apply' do nothing.
 (defvar nix-fmt-per-root-queues
   (make-hash-table :test #'equal :size nix-fmt-initial-project-map-size))
 
+(defvar nix-fmt-nix-system nil)
+
+(defun nix-fmt-nix-system ()
+  (or nix-fmt-nix-system
+      (setq nix-fmt-nix-system
+            (with-temp-buffer
+              (unless (zerop (call-process "nix" nil (list t nil) nil
+                                           "eval" "--expr" "builtins.currentSystem"
+                                           "--impure" "--raw"))
+                (error "Failed to retrieve the Nix system"))
+              (buffer-string)))))
+
+(defun nix-fmt--formatter (dir)
+  (when-let (dir (locate-dominating-file (or dir default-directory)
+                                         "flake.nix"))
+    (if (file-exists-p (expand-file-name "flake.lock" dir))
+        (when-let*
+            ((default-directory dir)
+             (installable (format ".#formatter.%s" (nix-fmt-nix-system)))
+             (result (with-temp-buffer
+                       (when (zerop (call-process "nix" nil (list t nil) nil
+                                                  "build" installable
+                                                  "--print-out-paths"
+                                                  "--no-link"
+                                                  "--no-write-lock-file"
+                                                  "--accept-flake-config"))
+                         (string-chop-newline (buffer-string)))))
+             (program (with-temp-buffer
+                        (when (zerop (call-process "nix" nil (list t nil) nil
+                                                   "eval"
+                                                   (concat installable ".meta.mainProgram")
+                                                   "--raw"))
+                          (string-chop-newline (buffer-string))))))
+          (expand-file-name (concat "bin/" program) result))
+      (message "flake.lock doesn't exist")
+      nil)))
+
 ;;;###autoload
 (define-minor-mode nix-fmt-mode
   "Minor mode in which files are queued for formatting on save."
@@ -84,10 +121,10 @@ If the value is nil, `nix-fmt-enqueue-this-file' and `nix-fmt-apply' do nothing.
     (string (locate-dominating-file file nix-fmt-root-location))))
 
 ;;;###autoload
-(defun nix-fmt-apply ()
+(defun nix-fmt-apply (&optional dir)
   "Apply formatter to files under the root directory."
   (interactive)
-  (when-let (root (nix-fmt--find-root default-directory))
+  (when-let (root (nix-fmt--find-root (or dir default-directory)))
     (when-let (queue (gethash root nix-fmt-per-root-queues))
       (let* ((default-directory root)
              (files (cl-remove-if-not (lambda (filename)
@@ -99,6 +136,12 @@ If the value is nil, `nix-fmt-enqueue-this-file' and `nix-fmt-apply' do nothing.
         (when files
           (nix-fmt--run-formatter files)))
       (remhash root nix-fmt-per-root-queues))))
+
+;;;###autoload
+(defun nix-fmt-apply-all ()
+  (interactive)
+  (dolist (dir (map-keys nix-fmt--find-root))
+    (nix-fmt-apply dir)))
 
 (defun nix-fmt--run-formatter (files)
   (when-let (buffer (get-buffer nix-fmt-formatter-output-buffer))
