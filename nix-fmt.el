@@ -48,6 +48,10 @@ If the value is nil, `nix-fmt-enqueue-this-file' and `nix-fmt-apply' do nothing.
                  (string :tag "File name")
                  (const nil)))
 
+(defcustom nix-fmt-file-regexp "\\.nix\\'"
+  "Regular expression to match files that should be formatted."
+  :type 'regexp)
+
 (defcustom nix-fmt-check-git-diff t
   "When non-nil, exclude files that have not changed since HEAD."
   :type 'boolean)
@@ -86,7 +90,9 @@ If the value is nil, `nix-fmt-enqueue-this-file' and `nix-fmt-apply' do nothing.
   (when-let (root (nix-fmt--find-root default-directory))
     (when-let (queue (gethash root nix-fmt-per-root-queues))
       (let* ((default-directory root)
-             (files (cl-remove-duplicates queue :test #'equal))
+             (files (cl-remove-if-not (lambda (filename)
+                                        (string-match-p nix-fmt-file-regexp filename))
+                                      (cl-remove-duplicates queue :test #'equal)))
              (files (if nix-fmt-check-git-diff
                         (nix-fmt-exclude-unchanged-files files)
                       files)))
